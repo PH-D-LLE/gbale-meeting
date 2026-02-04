@@ -1,0 +1,5 @@
+{
+  "name": "Meeting Attendance & Proxy System",
+  "description": "A responsive web application for managing meeting attendance and proxy submissions with a customizable CMS admin panel.",
+  "requestFramePermissions": []
+}
