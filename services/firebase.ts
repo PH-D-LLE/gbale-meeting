@@ -1,28 +1,29 @@
-// @ts-ignore
-import { initializeApp } from 'firebase/app';
-import { getDatabase, Database } from 'firebase/database';
+import firebase from 'firebase/app';
+import 'firebase/database';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAZk_atIFuVqIfTqikqPUCxwjzP8RrHJHk",
   authDomain: "gbale-meeting.firebaseapp.com",
-  databaseURL: "https://gbale-meeting-default-rtdb.asia-southeast1.firebasedatabase.app/", // User provided URL
+  databaseURL: "https://gbale-meeting-default-rtdb.asia-southeast1.firebasedatabase.app/",
   projectId: "gbale-meeting",
   storageBucket: "gbale-meeting.firebasestorage.app",
   messagingSenderId: "609688108032",
   appId: "1:609688108032:web:ec431feb0426119b57ace5"
 };
 
-// Explicitly type app as any to avoid strict mode build errors
-// since we are using @ts-ignore on import
-let app: any;
-let db: Database | null = null;
+let db: firebase.database.Database | null = null;
 
 try {
     // Initialize Firebase
-    app = initializeApp(firebaseConfig);
-    // Initialize Realtime Database instead of Firestore
-    db = getDatabase(app);
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    } else {
+        firebase.app(); // if already initialized, use that one
+    }
+    
+    // Initialize Realtime Database
+    db = firebase.database();
     console.log("Firebase RTDB initialized successfully.");
 } catch (error) {
     console.error("Firebase Initialization Error:", error);
