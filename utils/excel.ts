@@ -1,6 +1,6 @@
-import { Record } from '../types';
+import { AttendanceRecord } from '../types';
 
-export const downloadExcel = (records: Record[]) => {
+export const downloadExcel = (records: AttendanceRecord[]) => {
   // Simple CSV export to avoid heavy dependencies
   // BOM for Excel Korean support
   const BOM = '\uFEFF'; 

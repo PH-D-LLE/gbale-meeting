@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGlobal } from '../context/GlobalContext';
-import { AttendanceType, Record } from '../types';
+import { AttendanceType, AttendanceRecord } from '../types';
 import { Modal } from '../components/Modal';
 import { SignaturePad } from '../components/SignaturePad';
 
@@ -44,7 +44,7 @@ export const ProxyForm: React.FC = () => {
             const existingRecord = records.find(r => r.name === tempUser.name && r.phone === tempUser.phone);
             const recordId = existingRecord ? existingRecord.id : crypto.randomUUID();
 
-            const newRecord: Record = {
+            const newRecord: AttendanceRecord = {
                 id: recordId,
                 name: tempUser.name,
                 phone: tempUser.phone,

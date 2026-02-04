@@ -1,4 +1,4 @@
-import { Record, AppSettings, AdminUser } from '../types';
+import { AttendanceRecord, AppSettings, AdminUser } from '../types';
 import { db } from './firebase';
 import { 
   ref, 
@@ -28,10 +28,10 @@ const wait = () => new Promise(resolve => setTimeout(resolve, 300));
 // LocalStorage Helpers (Fallback)
 // ------------------------------------------------------------------
 
-const lsSaveRecord = async (record: Record) => {
+const lsSaveRecord = async (record: AttendanceRecord) => {
     await wait();
     const records = JSON.parse(localStorage.getItem(LS_KEYS.RECORDS) || '[]');
-    const index = records.findIndex((r: Record) => r.id === record.id);
+    const index = records.findIndex((r: AttendanceRecord) => r.id === record.id);
     if (index >= 0) {
         records[index] = record;
     } else {
@@ -40,7 +40,7 @@ const lsSaveRecord = async (record: Record) => {
     localStorage.setItem(LS_KEYS.RECORDS, JSON.stringify(records));
 };
 
-const lsGetRecords = async (): Promise<Record[]> => {
+const lsGetRecords = async (): Promise<AttendanceRecord[]> => {
     await wait();
     return JSON.parse(localStorage.getItem(LS_KEYS.RECORDS) || '[]');
 };
@@ -85,7 +85,7 @@ const lsDeleteAdmin = async (docId: string) => {
 // Records (Attendance/Proxy) - RTDB Implementation
 // ------------------------------------------------------------------
 
-export const saveRecord = async (record: Record): Promise<void> => {
+export const saveRecord = async (record: AttendanceRecord): Promise<void> => {
   if (db) {
       try {
           // RTDB: set at records/{id}
@@ -98,14 +98,14 @@ export const saveRecord = async (record: Record): Promise<void> => {
   return lsSaveRecord(record);
 };
 
-export const getRecords = async (): Promise<Record[]> => {
+export const getRecords = async (): Promise<AttendanceRecord[]> => {
   if (db) {
       try {
           const snapshot = await get(child(ref(db), PATH_RECORDS));
           if (snapshot.exists()) {
               const data = snapshot.val();
               // Convert object map to array
-              return Object.values(data) as Record[];
+              return Object.values(data) as AttendanceRecord[];
           }
           return [];
       } catch (e) {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGlobal } from '../context/GlobalContext';
-import { AttendanceType, Record } from '../types';
+import { AttendanceType, AttendanceRecord } from '../types';
 import { Modal } from '../components/Modal';
 
 export const UserMain: React.FC = () => {
@@ -60,7 +60,7 @@ export const UserMain: React.FC = () => {
     return true;
   };
 
-  const checkExisting = (): Record | undefined => {
+  const checkExisting = (): AttendanceRecord | undefined => {
     return records.find(r => r.name === name && r.phone === phone);
   };
 
@@ -83,7 +83,7 @@ export const UserMain: React.FC = () => {
   const processAttend = () => {
     // If existing, reuse ID to update
     const existing = checkExisting();
-    const newRecord: Record = {
+    const newRecord: AttendanceRecord = {
       id: existing ? existing.id : crypto.randomUUID(),
       name,
       phone,

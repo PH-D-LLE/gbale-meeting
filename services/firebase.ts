@@ -13,7 +13,9 @@ const firebaseConfig = {
   appId: "1:609688108032:web:ec431feb0426119b57ace5"
 };
 
-let app;
+// Explicitly type app as any to avoid strict mode build errors
+// since we are using @ts-ignore on import
+let app: any;
 let db: Database | null = null;
 
 try {

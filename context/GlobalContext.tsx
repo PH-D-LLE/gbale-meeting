@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { AppSettings, DEFAULT_SETTINGS, Record } from '../types';
+import { AppSettings, DEFAULT_SETTINGS, AttendanceRecord } from '../types';
 import * as Storage from '../services/storage';
 
 interface GlobalContextType {
   settings: AppSettings;
   updateSettings: (newSettings: AppSettings) => Promise<void>;
-  records: Record[];
-  addRecord: (record: Record) => Promise<void>;
+  records: AttendanceRecord[];
+  addRecord: (record: AttendanceRecord) => Promise<void>;
   refreshRecords: () => Promise<void>;
   tempUser: { name: string; phone: string } | null;
   setTempUser: (user: { name: string; phone: string } | null) => void;
@@ -17,7 +17,7 @@ const GlobalContext = createContext<GlobalContextType | undefined>(undefined);
 
 export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
-  const [records, setRecords] = useState<Record[]>([]);
+  const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [tempUser, setTempUser] = useState<{ name: string; phone: string } | null>(null);
 
@@ -48,7 +48,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     await Storage.saveSettings(newSettings);
   };
 
-  const addRecord = async (record: Record) => {
+  const addRecord = async (record: AttendanceRecord) => {
     // 1. Optimistic Update: Update local state immediately
     // This ensures that subsequent checks (like checkExisting) see the new data right away
     setRecords(prevRecords => {

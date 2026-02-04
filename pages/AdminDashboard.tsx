@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGlobal } from '../context/GlobalContext';
 import { downloadExcel } from '../utils/excel';
-import { AppSettings, AttendanceType, AdminUser } from '../types';
+import { AppSettings, AttendanceType, AttendanceRecord, AdminUser } from '../types';
 import * as Storage from '../services/storage';
 
 export const AdminDashboard: React.FC = () => {

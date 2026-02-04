@@ -3,7 +3,7 @@ export enum AttendanceType {
   PROXY = 'PROXY',
 }
 
-export interface Record {
+export interface AttendanceRecord {
   id: string;
   name: string;
   phone: string;
