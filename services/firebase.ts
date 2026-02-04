@@ -1,11 +1,12 @@
 // @ts-ignore
 import { initializeApp } from 'firebase/app';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { getDatabase, Database } from 'firebase/database';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAZk_atIFuVqIfTqikqPUCxwjzP8RrHJHk",
   authDomain: "gbale-meeting.firebaseapp.com",
+  databaseURL: "https://gbale-meeting-default-rtdb.asia-southeast1.firebasedatabase.app/", // User provided URL
   projectId: "gbale-meeting",
   storageBucket: "gbale-meeting.firebasestorage.app",
   messagingSenderId: "609688108032",
@@ -13,13 +14,14 @@ const firebaseConfig = {
 };
 
 let app;
-let db: Firestore | null = null;
+let db: Database | null = null;
 
 try {
     // Initialize Firebase
     app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
-    console.log("Firebase initialized successfully with project:", firebaseConfig.projectId);
+    // Initialize Realtime Database instead of Firestore
+    db = getDatabase(app);
+    console.log("Firebase RTDB initialized successfully.");
 } catch (error) {
     console.error("Firebase Initialization Error:", error);
     console.warn("Falling back to LocalStorage mode due to initialization failure.");

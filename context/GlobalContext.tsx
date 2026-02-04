@@ -49,10 +49,28 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   };
 
   const addRecord = async (record: Record) => {
-    await Storage.saveRecord(record);
-    // Reload records to ensure sync
-    const updatedRecords = await Storage.getRecords();
-    setRecords(updatedRecords);
+    // 1. Optimistic Update: Update local state immediately
+    // This ensures that subsequent checks (like checkExisting) see the new data right away
+    setRecords(prevRecords => {
+      const index = prevRecords.findIndex(r => r.id === record.id);
+      if (index >= 0) {
+        // Update existing
+        const newRecords = [...prevRecords];
+        newRecords[index] = record;
+        return newRecords;
+      } else {
+        // Add new
+        return [...prevRecords, record];
+      }
+    });
+
+    // 2. Perform Async DB Save
+    try {
+        await Storage.saveRecord(record);
+    } catch (e) {
+        console.error("Failed to save record to DB", e);
+        // In a real app, you might want to revert the state here if save fails
+    }
   };
 
   const refreshRecords = async () => {

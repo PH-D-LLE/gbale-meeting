@@ -1,22 +1,18 @@
 import { Record, AppSettings, AdminUser } from '../types';
 import { db } from './firebase';
 import { 
-  collection, 
-  doc, 
-  setDoc, 
-  getDoc, 
-  getDocs, 
-  addDoc, 
-  query, 
-  orderBy,
-  deleteDoc
-} from 'firebase/firestore';
+  ref, 
+  set, 
+  get, 
+  child, 
+  remove,
+  update
+} from 'firebase/database';
 
-// Collection References
-const COLLECTION_RECORDS = 'records';
-const COLLECTION_SETTINGS = 'settings';
-const COLLECTION_ADMINS = 'admins';
-const DOC_CONFIG = 'config';
+// Paths
+const PATH_RECORDS = 'records';
+const PATH_SETTINGS = 'settings/config';
+const PATH_ADMINS = 'admins';
 
 // LocalStorage Keys for Fallback
 const LS_KEYS = {
@@ -29,7 +25,7 @@ const LS_KEYS = {
 const wait = () => new Promise(resolve => setTimeout(resolve, 300));
 
 // ------------------------------------------------------------------
-// LocalStorage Helpers
+// LocalStorage Helpers (Fallback)
 // ------------------------------------------------------------------
 
 const lsSaveRecord = async (record: Record) => {
@@ -86,17 +82,17 @@ const lsDeleteAdmin = async (docId: string) => {
 };
 
 // ------------------------------------------------------------------
-// Records (Attendance/Proxy)
+// Records (Attendance/Proxy) - RTDB Implementation
 // ------------------------------------------------------------------
 
 export const saveRecord = async (record: Record): Promise<void> => {
   if (db) {
       try {
-          const recordRef = doc(db, COLLECTION_RECORDS, record.id);
-          await setDoc(recordRef, record);
+          // RTDB: set at records/{id}
+          await set(ref(db, `${PATH_RECORDS}/${record.id}`), record);
           return;
       } catch (e) {
-          console.warn("Firestore saveRecord failed (using LocalStorage fallback):", e);
+          console.warn("RTDB saveRecord failed (using LocalStorage fallback):", e);
       }
   }
   return lsSaveRecord(record);
@@ -105,32 +101,31 @@ export const saveRecord = async (record: Record): Promise<void> => {
 export const getRecords = async (): Promise<Record[]> => {
   if (db) {
       try {
-          const q = query(collection(db, COLLECTION_RECORDS), orderBy("timestamp", "desc"));
-          const querySnapshot = await getDocs(q);
-          const records: Record[] = [];
-          querySnapshot.forEach((doc) => {
-            records.push(doc.data() as Record);
-          });
-          return records;
+          const snapshot = await get(child(ref(db), PATH_RECORDS));
+          if (snapshot.exists()) {
+              const data = snapshot.val();
+              // Convert object map to array
+              return Object.values(data) as Record[];
+          }
+          return [];
       } catch (e) {
-          console.warn("Firestore getRecords failed (using LocalStorage fallback):", e);
+          console.warn("RTDB getRecords failed (using LocalStorage fallback):", e);
       }
   }
   return lsGetRecords();
 };
 
 // ------------------------------------------------------------------
-// Settings (CMS)
+// Settings (CMS) - RTDB Implementation
 // ------------------------------------------------------------------
 
 export const saveSettings = async (settings: AppSettings): Promise<void> => {
     if (db) {
         try {
-            await setDoc(doc(db, COLLECTION_SETTINGS, DOC_CONFIG), settings);
+            await set(ref(db, PATH_SETTINGS), settings);
             return;
         } catch (e) {
-             console.warn("Firestore saveSettings failed (using LocalStorage fallback):", e);
-             alert("서버 연결 실패. 로컬 저장소를 사용합니다.");
+             console.warn("RTDB saveSettings failed (using LocalStorage fallback):", e);
         }
     }
     return lsSaveSettings(settings);
@@ -139,37 +134,37 @@ export const saveSettings = async (settings: AppSettings): Promise<void> => {
 export const getSettings = async (): Promise<AppSettings | null> => {
     if (db) {
         try {
-            const docRef = doc(db, COLLECTION_SETTINGS, DOC_CONFIG);
-            const docSnap = await getDoc(docRef);
-            
-            if (docSnap.exists()) {
-                return docSnap.data() as AppSettings;
+            const snapshot = await get(child(ref(db), PATH_SETTINGS));
+            if (snapshot.exists()) {
+                return snapshot.val() as AppSettings;
             } else {
                 return null;
             }
         } catch (e) {
-            console.warn("Firestore getSettings failed (using LocalStorage fallback):", e);
+            console.warn("RTDB getSettings failed (using LocalStorage fallback):", e);
         }
     }
     return lsGetSettings();
 };
 
 // ------------------------------------------------------------------
-// Admins
+// Admins - RTDB Implementation
 // ------------------------------------------------------------------
 
 export const getAdmins = async (): Promise<AdminUser[]> => {
     if (db) {
         try {
-            const querySnapshot = await getDocs(collection(db, COLLECTION_ADMINS));
-            const admins: AdminUser[] = [];
-            querySnapshot.forEach((doc) => {
-                const data = doc.data() as AdminUser;
-                admins.push({ ...data, docId: doc.id });
-            });
-            return admins;
+            const snapshot = await get(child(ref(db), PATH_ADMINS));
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                return Object.keys(data).map(key => ({
+                    ...data[key],
+                    docId: key
+                }));
+            }
+            return [];
         } catch (e) {
-            console.warn("Firestore getAdmins failed (using LocalStorage fallback):", e);
+            console.warn("RTDB getAdmins failed (using LocalStorage fallback):", e);
         }
     }
     return lsGetAdmins();
@@ -178,17 +173,14 @@ export const getAdmins = async (): Promise<AdminUser[]> => {
 export const saveAdmin = async (admin: AdminUser): Promise<void> => {
     if (db) {
         try {
-            if (admin.docId) {
-                const adminRef = doc(db, COLLECTION_ADMINS, admin.docId);
-                const { docId, ...data } = admin;
-                await setDoc(adminRef, data);
-            } else {
-                const { docId, ...data } = admin;
-                await addDoc(collection(db, COLLECTION_ADMINS), data);
-            }
+            const docId = admin.docId || crypto.randomUUID();
+            const { docId: _, ...data } = admin;
+            // RTDB doesn't need to store docId inside the data if key is docId, 
+            // but we keep consistent structure
+            await set(ref(db, `${PATH_ADMINS}/${docId}`), data);
             return;
         } catch (e) {
-             console.warn("Firestore saveAdmin failed (using LocalStorage fallback):", e);
+             console.warn("RTDB saveAdmin failed (using LocalStorage fallback):", e);
         }
     }
     return lsSaveAdmin(admin);
@@ -197,15 +189,15 @@ export const saveAdmin = async (admin: AdminUser): Promise<void> => {
 export const deleteAdmin = async (docId: string): Promise<void> => {
     if (db) {
         try {
-            await deleteDoc(doc(db, COLLECTION_ADMINS, docId));
+            await remove(ref(db, `${PATH_ADMINS}/${docId}`));
             return;
         } catch (e) {
-             console.warn("Firestore deleteAdmin failed (using LocalStorage fallback):", e);
+             console.warn("RTDB deleteAdmin failed (using LocalStorage fallback):", e);
         }
     }
     return lsDeleteAdmin(docId);
 };
 
 export const clearAllData = (): void => {
-    console.warn("Clear All Data is not implemented for Firestore for safety.");
+    console.warn("Clear All Data is not implemented.");
 };

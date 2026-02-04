@@ -38,25 +38,32 @@ export const ProxyForm: React.FC = () => {
     if (tempUser) {
         setIsSubmitting(true);
         
-        // Check for existing record to update instead of create new
-        const existingRecord = records.find(r => r.name === tempUser.name && r.phone === tempUser.phone);
-        const recordId = existingRecord ? existingRecord.id : crypto.randomUUID();
+        try {
+            // Find existing record to update (Critical for preventing duplicates)
+            // Using records from context which should be up to date
+            const existingRecord = records.find(r => r.name === tempUser.name && r.phone === tempUser.phone);
+            const recordId = existingRecord ? existingRecord.id : crypto.randomUUID();
 
-        const newRecord: Record = {
-            id: recordId,
-            name: tempUser.name,
-            phone: tempUser.phone,
-            type: AttendanceType.PROXY,
-            timestamp: new Date().toISOString(),
-            proxyReceiver: proxyType,
-            proxyReceiverName: proxyType === 'PRESIDENT' ? '협회장' : proxyName,
-            signature: signature,
-            agreedToTerms: true
-        };
+            const newRecord: Record = {
+                id: recordId,
+                name: tempUser.name,
+                phone: tempUser.phone,
+                type: AttendanceType.PROXY,
+                timestamp: new Date().toISOString(),
+                proxyReceiver: proxyType,
+                proxyReceiverName: proxyType === 'PRESIDENT' ? '협회장' : proxyName,
+                signature: signature,
+                agreedToTerms: true
+            };
 
-        await addRecord(newRecord);
-        setIsSubmitting(false);
-        setModalOpen(true);
+            await addRecord(newRecord);
+            setModalOpen(true);
+        } catch (error) {
+            console.error("Error submitting proxy:", error);
+            alert("제출 중 오류가 발생했습니다. 다시 시도해주세요.");
+        } finally {
+            setIsSubmitting(false);
+        }
     }
   };
 
