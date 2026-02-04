@@ -27,11 +27,11 @@ export const ProxyForm: React.FC = () => {
 
   const handleSubmit = async () => {
     if (!signature) {
-      alert("서명이 필요합니다.");
+      alert(settings.msgSignatureError);
       return;
     }
     if (proxyType === 'OTHER' && !proxyName.trim()) {
-        alert("위임받을 회원의 이름을 입력해주세요.");
+        alert(settings.msgProxyNameError);
         return;
     }
 
