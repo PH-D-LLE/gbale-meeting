@@ -34,7 +34,7 @@ export const UserMain: React.FC = () => {
       setModalConfig({
         isOpen: true,
         title: "입력 오류",
-        message: settings.msgNameValidationError,
+        message: "이름은 한글 또는 영문(대소문자)만 입력 가능하며 공백이 없어야 합니다.",
         type: 'ERROR'
       });
       return false;
@@ -43,7 +43,7 @@ export const UserMain: React.FC = () => {
        setModalConfig({
         isOpen: true,
         title: "입력 오류",
-        message: settings.msgPhoneValidationError,
+        message: "전화번호는 숫자만 입력해주세요.",
         type: 'ERROR'
       });
       return false;
@@ -52,7 +52,7 @@ export const UserMain: React.FC = () => {
         setModalConfig({
             isOpen: true,
             title: "동의 필요",
-            message: settings.msgPrivacyError,
+            message: "개인정보 수집 및 이용에 동의해주셔야 제출이 가능합니다.",
             type: 'ERROR'
         });
         return false;
@@ -72,7 +72,7 @@ export const UserMain: React.FC = () => {
        setModalConfig({
         isOpen: true,
         title: "중복 제출",
-        message: settings.msgDuplicateAttendConfirm,
+        message: "이미 의사가 등록되어 있습니다. 참석으로 변경(또는 갱신)하시겠습니까?",
         type: 'CONFIRM_ATTEND'
       });
     } else {
@@ -108,8 +108,8 @@ export const UserMain: React.FC = () => {
     if (existing) {
       const isAttend = existing.type === AttendanceType.ATTEND;
       const msg = isAttend 
-        ? settings.msgDuplicateProxyConfirmFromAttend
-        : settings.msgDuplicateProxyConfirmFromProxy;
+        ? "이미 참석 제출하였습니다. 위임장으로 제출하시겠습니까?"
+        : "이미 의사가 등록되어 있습니다. 위임장 제출로 변경하시겠습니까?";
 
       setModalConfig({
         isOpen: true,

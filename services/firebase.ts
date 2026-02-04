@@ -1,4 +1,5 @@
-import * as firebaseApp from 'firebase/app';
+// @ts-ignore
+import { initializeApp } from 'firebase/app';
 import { getDatabase, Database } from 'firebase/database';
 
 // Your web app's Firebase configuration
@@ -16,11 +17,10 @@ let db: Database | null = null;
 
 try {
     // Initialize Firebase (Modular SDK)
-    // Use namespace import to avoid named export resolution issues
-    const app = firebaseApp.initializeApp(firebaseConfig);
+    const app = initializeApp(firebaseConfig);
     // Initialize Realtime Database
     db = getDatabase(app);
-    console.log("Firebase RTDB initialized successfully.");
+    console.log("Firebase RTDB initialized successfully (Modular SDK).");
 } catch (error) {
     console.error("Firebase Initialization Error:", error);
     console.warn("Falling back to LocalStorage mode due to initialization failure.");

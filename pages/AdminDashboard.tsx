@@ -310,7 +310,7 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Section 3: Messages & Notice (EXPANDED) */}
+                {/* Section 3: Messages & Notice (SIMPLIFIED) */}
                 <div className="border border-gray-200 p-5 rounded-xl bg-gray-50 col-span-1 md:col-span-2">
                     <h3 className="font-bold text-indigo-700 mb-4 border-b border-gray-200 pb-2 text-lg">메시지 및 알림 설정</h3>
                     
@@ -329,42 +329,6 @@ export const AdminDashboard: React.FC = () => {
                             <div>
                                 <label className="block text-sm font-bold mb-1 text-gray-700">위임장 완료 팝업 메시지</label>
                                 <input type="text" className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-gray-900" value={localSettings.proxySuccessMsg} onChange={e => handleChangeSetting('proxySuccessMsg', e.target.value)} />
-                            </div>
-                        </div>
-
-                        {/* Validations & Errors */}
-                        <div className="space-y-4">
-                            <h4 className="font-bold text-gray-600 text-sm uppercase">오류 및 확인 메시지</h4>
-                             <div>
-                                <label className="block text-sm font-bold mb-1 text-gray-700">중복 확인 (참석)</label>
-                                <input type="text" className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-gray-900 text-sm" value={localSettings.msgDuplicateAttendConfirm} onChange={e => handleChangeSetting('msgDuplicateAttendConfirm', e.target.value)} />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold mb-1 text-gray-700">중복 확인 (참석 -> 위임)</label>
-                                <input type="text" className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-gray-900 text-sm" value={localSettings.msgDuplicateProxyConfirmFromAttend} onChange={e => handleChangeSetting('msgDuplicateProxyConfirmFromAttend', e.target.value)} />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold mb-1 text-gray-700">중복 확인 (위임 -> 위임)</label>
-                                <input type="text" className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-gray-900 text-sm" value={localSettings.msgDuplicateProxyConfirmFromProxy} onChange={e => handleChangeSetting('msgDuplicateProxyConfirmFromProxy', e.target.value)} />
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label className="block text-xs font-bold mb-1 text-gray-700">이름 유효성 오류</label>
-                                    <input type="text" className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-gray-900 text-xs" value={localSettings.msgNameValidationError} onChange={e => handleChangeSetting('msgNameValidationError', e.target.value)} />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold mb-1 text-gray-700">전화번호 유효성 오류</label>
-                                    <input type="text" className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-gray-900 text-xs" value={localSettings.msgPhoneValidationError} onChange={e => handleChangeSetting('msgPhoneValidationError', e.target.value)} />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold mb-1 text-gray-700">개인정보 동의 오류</label>
-                                    <input type="text" className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-gray-900 text-xs" value={localSettings.msgPrivacyError} onChange={e => handleChangeSetting('msgPrivacyError', e.target.value)} />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold mb-1 text-gray-700">서명 미입력 오류</label>
-                                    <input type="text" className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-gray-900 text-xs" value={localSettings.msgSignatureError} onChange={e => handleChangeSetting('msgSignatureError', e.target.value)} />
-                                </div>
                             </div>
                         </div>
                     </div>
