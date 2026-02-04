@@ -7,12 +7,13 @@ import { SignaturePad } from '../components/SignaturePad';
 
 export const ProxyForm: React.FC = () => {
   const navigate = useNavigate();
-  const { settings, addRecord, tempUser, setTempUser } = useGlobal();
+  const { settings, addRecord, tempUser, setTempUser, records } = useGlobal();
 
   const [proxyType, setProxyType] = useState<'PRESIDENT' | 'OTHER'>('PRESIDENT');
   const [proxyName, setProxyName] = useState('');
   const [signature, setSignature] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!tempUser) {
@@ -24,7 +25,7 @@ export const ProxyForm: React.FC = () => {
     navigate('/');
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!signature) {
       alert("서명이 필요합니다.");
       return;
@@ -35,8 +36,14 @@ export const ProxyForm: React.FC = () => {
     }
 
     if (tempUser) {
+        setIsSubmitting(true);
+        
+        // Check for existing record to update instead of create new
+        const existingRecord = records.find(r => r.name === tempUser.name && r.phone === tempUser.phone);
+        const recordId = existingRecord ? existingRecord.id : crypto.randomUUID();
+
         const newRecord: Record = {
-            id: crypto.randomUUID(),
+            id: recordId,
             name: tempUser.name,
             phone: tempUser.phone,
             type: AttendanceType.PROXY,
@@ -47,7 +54,8 @@ export const ProxyForm: React.FC = () => {
             agreedToTerms: true
         };
 
-        addRecord(newRecord);
+        await addRecord(newRecord);
+        setIsSubmitting(false);
         setModalOpen(true);
     }
   };
@@ -172,14 +180,16 @@ export const ProxyForm: React.FC = () => {
             <button 
                 onClick={handleCancel}
                 className="flex-1 py-4 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors"
+                disabled={isSubmitting}
             >
                 취소
             </button>
             <button 
                 onClick={handleSubmit}
-                className={`flex-1 py-4 px-4 text-white font-bold rounded-xl shadow-lg transition-transform transform active:scale-95 ${settings.proxyButtonColor.replace('bg-blue-500', 'bg-blue-600')}`}
+                disabled={isSubmitting}
+                className={`flex-1 py-4 px-4 text-white font-bold rounded-xl shadow-lg transition-transform transform active:scale-95 ${settings.proxyButtonColor.replace('bg-blue-500', 'bg-blue-600')} ${isSubmitting ? 'opacity-70 cursor-wait' : ''}`}
             >
-                제출하기
+                {isSubmitting ? '제출 중...' : '제출하기'}
             </button>
         </div>
 

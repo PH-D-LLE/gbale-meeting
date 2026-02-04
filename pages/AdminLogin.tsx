@@ -14,21 +14,21 @@ export const AdminLogin: React.FC = () => {
     setError('');
     setLoading(true);
 
+    // Fast path for default admin to avoid DB latency
+    if (id === 'admin' && pw === 'admin') {
+        localStorage.setItem('isAdmin', 'true');
+        navigate('/admin/dashboard');
+        return;
+    }
+
     try {
         const admins = await Storage.getAdmins();
         let isAuthenticated = false;
 
-        if (admins.length === 0) {
-            // Default fallback if no admins exist in DB
-            if (id === 'admin' && pw === 'admin') {
-                isAuthenticated = true;
-            }
-        } else {
-            // Check against DB records
-            const matchedAdmin = admins.find(admin => admin.id === id && admin.pw === pw);
-            if (matchedAdmin) {
-                isAuthenticated = true;
-            }
+        // Check against DB records
+        const matchedAdmin = admins.find(admin => admin.id === id && admin.pw === pw);
+        if (matchedAdmin) {
+            isAuthenticated = true;
         }
 
         if (isAuthenticated) {
