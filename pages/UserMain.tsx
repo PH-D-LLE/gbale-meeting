@@ -72,7 +72,7 @@ export const UserMain: React.FC = () => {
        setModalConfig({
         isOpen: true,
         title: "중복 제출",
-        message: "이미 의사가 등록되어 있습니다. 참석으로 변경(또는 갱신)하시겠습니까?",
+        message: "이미 위임장 제출이 등록되어 있습니다. 참석으로 변경(또는 갱신)하시겠습니까?",
         type: 'CONFIRM_ATTEND'
       });
     } else {
@@ -109,7 +109,7 @@ export const UserMain: React.FC = () => {
       const isAttend = existing.type === AttendanceType.ATTEND;
       const msg = isAttend 
         ? "이미 참석 제출하였습니다. 위임장으로 제출하시겠습니까?"
-        : "이미 의사가 등록되어 있습니다. 위임장 제출로 변경하시겠습니까?";
+        : "이미 참석 제출로 등록되어 있습니다. 위임장 제출로 변경하시겠습니까?";
 
       setModalConfig({
         isOpen: true,
