@@ -1,5 +1,6 @@
 import { AttendanceRecord, AppSettings, AdminUser } from '../types';
 import { db } from './firebase';
+import { ref, set, get, child, remove } from 'firebase/database';
 
 // Paths
 const PATH_RECORDS = 'records';
@@ -80,8 +81,8 @@ const lsDeleteAdmin = async (docId: string) => {
 export const saveRecord = async (record: AttendanceRecord): Promise<void> => {
   if (db) {
       try {
-          // RTDB: set at records/{id}
-          await db.ref(`${PATH_RECORDS}/${record.id}`).set(record);
+          // RTDB: set using modular syntax
+          await set(ref(db, `${PATH_RECORDS}/${record.id}`), record);
           return;
       } catch (e) {
           console.warn("RTDB saveRecord failed (using LocalStorage fallback):", e);
@@ -93,7 +94,7 @@ export const saveRecord = async (record: AttendanceRecord): Promise<void> => {
 export const getRecords = async (): Promise<AttendanceRecord[]> => {
   if (db) {
       try {
-          const snapshot = await db.ref(PATH_RECORDS).once('value');
+          const snapshot = await get(child(ref(db), PATH_RECORDS));
           if (snapshot.exists()) {
               const data = snapshot.val();
               // Convert object map to array
@@ -114,7 +115,7 @@ export const getRecords = async (): Promise<AttendanceRecord[]> => {
 export const saveSettings = async (settings: AppSettings): Promise<void> => {
     if (db) {
         try {
-            await db.ref(PATH_SETTINGS).set(settings);
+            await set(ref(db, PATH_SETTINGS), settings);
             return;
         } catch (e) {
              console.warn("RTDB saveSettings failed (using LocalStorage fallback):", e);
@@ -126,7 +127,7 @@ export const saveSettings = async (settings: AppSettings): Promise<void> => {
 export const getSettings = async (): Promise<AppSettings | null> => {
     if (db) {
         try {
-            const snapshot = await db.ref(PATH_SETTINGS).once('value');
+            const snapshot = await get(child(ref(db), PATH_SETTINGS));
             if (snapshot.exists()) {
                 return snapshot.val() as AppSettings;
             } else {
@@ -146,7 +147,7 @@ export const getSettings = async (): Promise<AppSettings | null> => {
 export const getAdmins = async (): Promise<AdminUser[]> => {
     if (db) {
         try {
-            const snapshot = await db.ref(PATH_ADMINS).once('value');
+            const snapshot = await get(child(ref(db), PATH_ADMINS));
             if (snapshot.exists()) {
                 const data = snapshot.val();
                 return Object.keys(data).map(key => ({
@@ -167,9 +168,7 @@ export const saveAdmin = async (admin: AdminUser): Promise<void> => {
         try {
             const docId = admin.docId || crypto.randomUUID();
             const { docId: _, ...data } = admin;
-            // RTDB doesn't need to store docId inside the data if key is docId, 
-            // but we keep consistent structure
-            await db.ref(`${PATH_ADMINS}/${docId}`).set(data);
+            await set(ref(db, `${PATH_ADMINS}/${docId}`), data);
             return;
         } catch (e) {
              console.warn("RTDB saveAdmin failed (using LocalStorage fallback):", e);
@@ -181,7 +180,7 @@ export const saveAdmin = async (admin: AdminUser): Promise<void> => {
 export const deleteAdmin = async (docId: string): Promise<void> => {
     if (db) {
         try {
-            await db.ref(`${PATH_ADMINS}/${docId}`).remove();
+            await remove(ref(db, `${PATH_ADMINS}/${docId}`));
             return;
         } catch (e) {
              console.warn("RTDB deleteAdmin failed (using LocalStorage fallback):", e);

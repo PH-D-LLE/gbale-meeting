@@ -1,5 +1,5 @@
-import firebase from 'firebase/app';
-import 'firebase/database';
+import * as firebaseApp from 'firebase/app';
+import { getDatabase, Database } from 'firebase/database';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -12,18 +12,14 @@ const firebaseConfig = {
   appId: "1:609688108032:web:ec431feb0426119b57ace5"
 };
 
-let db: firebase.database.Database | null = null;
+let db: Database | null = null;
 
 try {
-    // Initialize Firebase
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    } else {
-        firebase.app(); // if already initialized, use that one
-    }
-    
+    // Initialize Firebase (Modular SDK)
+    // Use namespace import to avoid named export resolution issues
+    const app = firebaseApp.initializeApp(firebaseConfig);
     // Initialize Realtime Database
-    db = firebase.database();
+    db = getDatabase(app);
     console.log("Firebase RTDB initialized successfully.");
 } catch (error) {
     console.error("Firebase Initialization Error:", error);
