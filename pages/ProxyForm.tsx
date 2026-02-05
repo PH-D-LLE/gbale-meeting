@@ -217,9 +217,10 @@ export const ProxyForm: React.FC = () => {
         {settings.proxyManualInstructions && (
             <div className="bg-slate-100 border border-slate-200 rounded-xl p-6 mt-8">
                 <h3 className="font-bold text-slate-700 mb-4 border-b border-slate-200 pb-2">오프라인 제출 안내</h3>
-                <div className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed mb-4">
-                    {settings.proxyManualInstructions}
-                </div>
+                <div 
+                    className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed mb-4 break-words"
+                    dangerouslySetInnerHTML={{ __html: settings.proxyManualInstructions }}
+                />
                 {settings.proxyDownloadFile && (
                      <button 
                         onClick={handleDownload}

@@ -26,7 +26,10 @@ export const Modal: React.FC<ModalProps> = ({
       <div className="bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden animate-fade-in-up">
         <div className="p-6 text-center">
           <h3 className="text-lg font-bold text-gray-900 mb-2">{title}</h3>
-          <p className="text-gray-600 whitespace-pre-wrap">{message}</p>
+          <div 
+            className="text-gray-600 whitespace-pre-wrap break-words"
+            dangerouslySetInnerHTML={{ __html: message }}
+          />
         </div>
         <div className="flex border-t border-gray-200">
           {onCancel && (

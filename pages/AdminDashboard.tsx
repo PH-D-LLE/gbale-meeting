@@ -4,6 +4,7 @@ import { useGlobal } from '../context/GlobalContext';
 import { downloadExcel } from '../utils/excel';
 import { AppSettings, AttendanceType, AttendanceRecord, AdminUser } from '../types';
 import * as Storage from '../services/storage';
+import { SimpleEditor } from '../components/SimpleEditor';
 
 export const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -431,7 +432,7 @@ export const AdminDashboard: React.FC = () => {
 
                 {/* Section 3: Messages & Notice (SIMPLIFIED) */}
                 <div className="border border-gray-200 p-5 rounded-xl bg-gray-50 col-span-1 md:col-span-2">
-                    <h3 className="font-bold text-indigo-700 mb-4 border-b border-gray-200 pb-2 text-lg">메시지 및 알림 설정</h3>
+                    <h3 className="font-bold text-indigo-700 mb-4 border-b border-gray-200 pb-2 text-lg">메시지 및 알림 설정 (에디터 지원)</h3>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         {/* Notice & Success */}
@@ -439,15 +440,15 @@ export const AdminDashboard: React.FC = () => {
                             <h4 className="font-bold text-gray-600 text-sm uppercase">기본 공지 및 완료 메시지</h4>
                             <div>
                                 <label className="block text-sm font-bold mb-1 text-gray-700">공지 박스 텍스트</label>
-                                <textarea className="w-full p-3 border border-gray-300 rounded h-24 focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-gray-900" value={localSettings.noticeText} onChange={e => handleChangeSetting('noticeText', e.target.value)} />
+                                <SimpleEditor value={localSettings.noticeText} onChange={val => handleChangeSetting('noticeText', val)} height="h-32" />
                             </div>
                             <div>
                                 <label className="block text-sm font-bold mb-1 text-gray-700">참석 완료 팝업 메시지</label>
-                                <input type="text" className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-gray-900" value={localSettings.attendSuccessMsg} onChange={e => handleChangeSetting('attendSuccessMsg', e.target.value)} />
+                                <SimpleEditor value={localSettings.attendSuccessMsg} onChange={val => handleChangeSetting('attendSuccessMsg', val)} height="h-20" />
                             </div>
                             <div>
                                 <label className="block text-sm font-bold mb-1 text-gray-700">위임장 완료 팝업 메시지</label>
-                                <input type="text" className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-gray-900" value={localSettings.proxySuccessMsg} onChange={e => handleChangeSetting('proxySuccessMsg', e.target.value)} />
+                                <SimpleEditor value={localSettings.proxySuccessMsg} onChange={val => handleChangeSetting('proxySuccessMsg', val)} height="h-20" />
                             </div>
                         </div>
 
@@ -456,7 +457,7 @@ export const AdminDashboard: React.FC = () => {
                              <h4 className="font-bold text-gray-600 text-sm uppercase">서면 위임장(오프라인) 안내 설정</h4>
                              <div>
                                 <label className="block text-sm font-bold mb-1 text-gray-700">안내 문구</label>
-                                <textarea className="w-full p-3 border border-gray-300 rounded h-32 focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-gray-900" value={localSettings.proxyManualInstructions} onChange={e => handleChangeSetting('proxyManualInstructions', e.target.value)} placeholder="서명이 어려우신 경우..." />
+                                <SimpleEditor value={localSettings.proxyManualInstructions} onChange={val => handleChangeSetting('proxyManualInstructions', val)} height="h-32" />
                              </div>
                              <div>
                                 <label className="block text-sm font-bold mb-1 text-gray-700">위임장 양식 파일 업로드 (2MB 이하)</label>
@@ -478,29 +479,29 @@ export const AdminDashboard: React.FC = () => {
 
                 {/* Section 4: Contact */}
                 <div className="border border-gray-200 p-5 rounded-xl bg-gray-50 md:col-span-2">
-                    <h3 className="font-bold text-indigo-700 mb-4 border-b border-gray-200 pb-2 text-lg">하단 문의 정보</h3>
+                    <h3 className="font-bold text-indigo-700 mb-4 border-b border-gray-200 pb-2 text-lg">하단 문의 정보 (에디터 지원)</h3>
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-bold mb-1 text-gray-700">기관명</label>
-                            <input type="text" className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-gray-900" value={localSettings.contactOrgName} onChange={e => handleChangeSetting('contactOrgName', e.target.value)} />
+                            <SimpleEditor value={localSettings.contactOrgName} onChange={val => handleChangeSetting('contactOrgName', val)} height="h-16" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                              <div>
-                                <label className="block text-sm font-bold mb-1 text-gray-700">전화</label>
-                                <input type="text" className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-gray-900" value={localSettings.contactPhone} onChange={e => handleChangeSetting('contactPhone', e.target.value)} />
+                                <label className="block text-sm font-bold mb-1 text-gray-700">전화 번호 (값만 입력)</label>
+                                <SimpleEditor value={localSettings.contactPhone} onChange={val => handleChangeSetting('contactPhone', val)} height="h-16" />
                             </div>
                             <div>
-                                <label className="block text-sm font-bold mb-1 text-gray-700">FAX</label>
-                                <input type="text" className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-gray-900" value={localSettings.contactFax} onChange={e => handleChangeSetting('contactFax', e.target.value)} />
+                                <label className="block text-sm font-bold mb-1 text-gray-700">FAX 번호 (값만 입력)</label>
+                                <SimpleEditor value={localSettings.contactFax} onChange={val => handleChangeSetting('contactFax', val)} height="h-16" />
                             </div>
                         </div>
                         <div>
                             <label className="block text-sm font-bold mb-1 text-gray-700">이메일</label>
-                            <input type="text" className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-gray-900" value={localSettings.contactEmail} onChange={e => handleChangeSetting('contactEmail', e.target.value)} />
+                            <SimpleEditor value={localSettings.contactEmail} onChange={val => handleChangeSetting('contactEmail', val)} height="h-16" />
                         </div>
                          <div>
                             <label className="block text-sm font-bold mb-1 text-gray-700">운영 시간</label>
-                            <input type="text" className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-gray-900" value={localSettings.contactHours} onChange={e => handleChangeSetting('contactHours', e.target.value)} />
+                            <SimpleEditor value={localSettings.contactHours} onChange={val => handleChangeSetting('contactHours', val)} height="h-16" />
                         </div>
                     </div>
                 </div>

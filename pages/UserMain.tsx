@@ -1,16 +1,35 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGlobal } from '../context/GlobalContext';
 import { AttendanceType, AttendanceRecord } from '../types';
 import { Modal } from '../components/Modal';
 
+const PHONE_PREFIXES = [
+  '010', '011', '016', '017', '018', '019', // Mobile
+  '02', // Seoul
+  '031', '032', '033', // Gyeonggi, Incheon, Gangwon
+  '041', '042', '043', '044', // Chungcheong
+  '051', '052', '053', '054', '055', // Gyeongsang
+  '061', '062', '063', '064' // Jeolla, Jeju
+];
+
 export const UserMain: React.FC = () => {
   const navigate = useNavigate();
   const { settings, addRecord, records, setTempUser, tempUser } = useGlobal();
   
+  // State for inputs
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+  
+  // Split Phone State
+  const [phone1, setPhone1] = useState('010');
+  const [phone2, setPhone2] = useState('');
+  const [phone3, setPhone3] = useState('');
+
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
+
+  // Refs for auto-focus
+  const phone2Ref = useRef<HTMLInputElement>(null);
+  const phone3Ref = useRef<HTMLInputElement>(null);
 
   const [modalConfig, setModalConfig] = useState<{
     isOpen: boolean;
@@ -22,32 +41,77 @@ export const UserMain: React.FC = () => {
   useEffect(() => {
     if (tempUser) {
       setName(tempUser.name);
-      setPhone(tempUser.phone);
+      // Try to parse existing phone number if coming back
+      // Assuming format is continuous numbers
+      if (tempUser.phone.startsWith('010') && tempUser.phone.length === 11) {
+          setPhone1(tempUser.phone.substring(0,3));
+          setPhone2(tempUser.phone.substring(3,7));
+          setPhone3(tempUser.phone.substring(7,11));
+      } else {
+          // Fallback parsing or just leave as is if complex
+      }
     }
   }, [tempUser]);
 
-  const validateInput = () => {
-    const nameRegex = /^[a-zA-Z가-힣]+$/;
-    const phoneRegex = /^[0-9]+$/;
+  // Handle phone input with auto-focus
+  const handlePhone2Change = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const val = e.target.value.replace(/[^0-9]/g, '');
+      if (val.length <= 4) {
+          setPhone2(val);
+          if (val.length === 4 && phone3Ref.current) {
+              phone3Ref.current.focus();
+          }
+      }
+  };
 
-    if (!name || !nameRegex.test(name)) {
+  const handlePhone3Change = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const val = e.target.value.replace(/[^0-9]/g, '');
+      if (val.length <= 4) {
+          setPhone3(val);
+      }
+  };
+
+  const getFullPhone = () => `${phone1}${phone2}${phone3}`;
+
+  const validateInput = () => {
+    const trimmedName = name.trim();
+    const fullPhone = getFullPhone();
+    
+    // 1. Name Validation (Length & Regex)
+    const nameRegex = /^[a-zA-Z가-힣]+$/; // Allows Hangul and English
+    
+    if (trimmedName.length < 2) {
+        setModalConfig({
+            isOpen: true,
+            title: "입력 오류",
+            message: "이름은 최소 2글자 이상 입력해주세요.",
+            type: 'ERROR'
+        });
+        return false;
+    }
+
+    if (!nameRegex.test(trimmedName)) {
       setModalConfig({
         isOpen: true,
         title: "입력 오류",
-        message: "이름은 한글 또는 영문(대소문자)만 입력 가능하며 공백이 없어야 합니다.",
+        message: "이름은 한글 또는 영문만 입력 가능하며 공백이나 특수문자는 사용할 수 없습니다.",
         type: 'ERROR'
       });
       return false;
     }
-    if (!phone || !phoneRegex.test(phone)) {
+
+    // 2. Phone Validation
+    if (phone2.length < 3 || phone3.length < 4) {
        setModalConfig({
         isOpen: true,
         title: "입력 오류",
-        message: "전화번호는 숫자만 입력해주세요.",
+        message: "전화번호 형식이 올바르지 않습니다. 번호를 모두 입력해주세요.",
         type: 'ERROR'
       });
       return false;
     }
+
+    // 3. Privacy Agreement
     if (!privacyAgreed) {
         setModalConfig({
             isOpen: true,
@@ -57,17 +121,21 @@ export const UserMain: React.FC = () => {
         });
         return false;
     }
+
     return true;
   };
 
-  const checkExisting = (): AttendanceRecord | undefined => {
-    return records.find(r => r.name === name && r.phone === phone);
+  const checkExisting = (targetName: string, targetPhone: string): AttendanceRecord | undefined => {
+    return records.find(r => r.name === targetName && r.phone === targetPhone);
   };
 
   const handleAttendClick = () => {
     if (!validateInput()) return;
 
-    const existing = checkExisting();
+    const finalName = name.trim();
+    const finalPhone = getFullPhone();
+
+    const existing = checkExisting(finalName, finalPhone);
     if (existing) {
        setModalConfig({
         isOpen: true,
@@ -76,17 +144,17 @@ export const UserMain: React.FC = () => {
         type: 'CONFIRM_ATTEND'
       });
     } else {
-      processAttend();
+      processAttend(finalName, finalPhone);
     }
   };
 
-  const processAttend = () => {
+  const processAttend = (finalName: string, finalPhone: string) => {
     // If existing, reuse ID to update
-    const existing = checkExisting();
+    const existing = checkExisting(finalName, finalPhone);
     const newRecord: AttendanceRecord = {
       id: existing ? existing.id : crypto.randomUUID(),
-      name,
-      phone,
+      name: finalName,
+      phone: finalPhone,
       type: AttendanceType.ATTEND,
       timestamp: new Date().toISOString(),
       agreedToTerms: true
@@ -101,10 +169,12 @@ export const UserMain: React.FC = () => {
   };
 
   const handleProxyClick = () => {
-    // For proxy, strictly validating name/phone and privacy first
     if (!validateInput()) return;
 
-    const existing = checkExisting();
+    const finalName = name.trim();
+    const finalPhone = getFullPhone();
+
+    const existing = checkExisting(finalName, finalPhone);
     if (existing) {
       const isAttend = existing.type === AttendanceType.ATTEND;
       const msg = isAttend 
@@ -118,16 +188,19 @@ export const UserMain: React.FC = () => {
         type: 'CONFIRM_PROXY_REDIRECT'
       });
     } else {
-      setTempUser({ name, phone });
+      setTempUser({ name: finalName, phone: finalPhone });
       navigate('/proxy');
     }
   };
 
   const handleModalConfirm = () => {
+    const finalName = name.trim();
+    const finalPhone = getFullPhone();
+
     if (modalConfig.type === 'CONFIRM_ATTEND') {
-      processAttend();
+      processAttend(finalName, finalPhone);
     } else if (modalConfig.type === 'CONFIRM_PROXY_REDIRECT') {
-      setTempUser({ name, phone });
+      setTempUser({ name: finalName, phone: finalPhone });
       navigate('/proxy');
     }
     setModalConfig({ ...modalConfig, isOpen: false });
@@ -169,8 +242,10 @@ export const UserMain: React.FC = () => {
               </div>
             </div>
             
-            <div className={`mt-4 p-4 rounded-xl text-sm leading-relaxed whitespace-pre-wrap ${settings.noticeBoxBg} text-gray-700 border border-black/5`}>
-              {settings.noticeText}
+            <div 
+                className={`mt-4 p-4 rounded-xl text-sm leading-relaxed whitespace-pre-wrap ${settings.noticeBoxBg} text-gray-700 border border-black/5 break-words`}
+                dangerouslySetInnerHTML={{ __html: settings.noticeText }}
+            >
             </div>
           </div>
 
@@ -183,21 +258,45 @@ export const UserMain: React.FC = () => {
                 <input
                   type="text"
                   value={name}
-                  onChange={(e) => setName(e.target.value.replace(/\s/g, ''))}
-                  placeholder="홍길동 (띄어쓰기 없이 입력)"
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="성명 (2글자 이상)"
+                  minLength={2}
                   className="w-full px-4 py-3 bg-white text-gray-900 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder-gray-400"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">전화번호</label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
-                  placeholder="숫자만 입력 (예: 01012345678)"
-                  className="w-full px-4 py-3 bg-white text-gray-900 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder-gray-400"
-                />
+                <div className="flex gap-2">
+                    <select
+                        value={phone1}
+                        onChange={(e) => setPhone1(e.target.value)}
+                        className="w-[28%] px-2 py-3 bg-white text-gray-900 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-center appearance-none"
+                        style={{ textAlignLast: 'center' }}
+                    >
+                        {PHONE_PREFIXES.map(prefix => (
+                            <option key={prefix} value={prefix}>{prefix}</option>
+                        ))}
+                    </select>
+                    <input
+                        ref={phone2Ref}
+                        type="tel"
+                        value={phone2}
+                        onChange={handlePhone2Change}
+                        placeholder="1234"
+                        maxLength={4}
+                        className="w-[36%] px-3 py-3 bg-white text-gray-900 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 text-center tracking-widest"
+                    />
+                    <input
+                        ref={phone3Ref}
+                        type="tel"
+                        value={phone3}
+                        onChange={handlePhone3Change}
+                        placeholder="5678"
+                        maxLength={4}
+                        className="w-[36%] px-3 py-3 bg-white text-gray-900 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 text-center tracking-widest"
+                    />
+                </div>
               </div>
             </div>
 
@@ -248,11 +347,19 @@ export const UserMain: React.FC = () => {
 
         {/* Footer Info */}
         <div className="mt-8 text-center space-y-4">
-            <h3 className="font-bold text-gray-700">{settings.contactOrgName}</h3>
+            <div dangerouslySetInnerHTML={{ __html: settings.contactOrgName }} className="font-bold text-gray-700"></div>
             <div className="text-sm text-gray-500 space-y-1 bg-white/50 p-4 rounded-lg inline-block">
-              <p>전화: {settings.contactPhone} | FAX: {settings.contactFax}</p>
-              <p>이메일: {settings.contactEmail}</p>
-              <p className="text-gray-400 mt-2 text-xs">상담시간: {settings.contactHours}</p>
+              <div className="flex flex-wrap justify-center items-center gap-2">
+                  <span>전화:</span> <span dangerouslySetInnerHTML={{ __html: settings.contactPhone }} />
+                  <span className="text-gray-300">|</span>
+                  <span>FAX:</span> <span dangerouslySetInnerHTML={{ __html: settings.contactFax }} />
+              </div>
+              <div className="flex justify-center items-center gap-2">
+                  <span>이메일:</span> <span dangerouslySetInnerHTML={{ __html: settings.contactEmail }} />
+              </div>
+              <div className="flex justify-center items-center gap-2 text-gray-400 mt-2 text-xs">
+                  <span>상담시간:</span> <span dangerouslySetInnerHTML={{ __html: settings.contactHours }} />
+              </div>
             </div>
         </div>
 
