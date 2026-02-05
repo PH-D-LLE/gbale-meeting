@@ -4,6 +4,7 @@ import { useGlobal } from '../context/GlobalContext';
 import { AttendanceType, AttendanceRecord } from '../types';
 import { Modal } from '../components/Modal';
 
+// 대한민국 전화번호 접두어 목록 (010, 011 등 모바일 우선 정렬)
 const PHONE_PREFIXES = [
   '010', '011', '016', '017', '018', '019', // Mobile
   '02', // Seoul
@@ -41,19 +42,40 @@ export const UserMain: React.FC = () => {
   useEffect(() => {
     if (tempUser) {
       setName(tempUser.name);
-      // Try to parse existing phone number if coming back
-      // Assuming format is continuous numbers
-      if (tempUser.phone.startsWith('010') && tempUser.phone.length === 11) {
-          setPhone1(tempUser.phone.substring(0,3));
-          setPhone2(tempUser.phone.substring(3,7));
-          setPhone3(tempUser.phone.substring(7,11));
+      
+      // 전화번호 파싱 로직 (복귀 시 데이터 채우기)
+      // 단순하게 010으로 시작하고 11자리면 3-4-4로 자릅니다.
+      // 그 외의 경우 접두어를 매칭해봅니다.
+      const p = tempUser.phone;
+      if (p.length === 11 && p.startsWith('010')) {
+          setPhone1(p.substring(0, 3));
+          setPhone2(p.substring(3, 7));
+          setPhone3(p.substring(7, 11));
       } else {
-          // Fallback parsing or just leave as is if complex
+          // 접두어 매칭 시도
+          const matchedPrefix = PHONE_PREFIXES.find(prefix => p.startsWith(prefix));
+          if (matchedPrefix) {
+              setPhone1(matchedPrefix);
+              const rest = p.substring(matchedPrefix.length);
+              // 남은 길이가 7~8자리일 것임 (3+4 또는 4+4)
+              if (rest.length === 8) {
+                  setPhone2(rest.substring(0, 4));
+                  setPhone3(rest.substring(4, 8));
+              } else if (rest.length === 7) {
+                  setPhone2(rest.substring(0, 3));
+                  setPhone3(rest.substring(3, 7));
+              } else {
+                  // 포맷이 애매하면 앞부분에 몰아넣기
+                  setPhone2(rest); 
+              }
+          } else {
+             // 매칭 안되면 기본값 유지 혹은 수동 입력 유도
+          }
       }
     }
   }, [tempUser]);
 
-  // Handle phone input with auto-focus
+  // 중간 번호 입력 시 4자리가 되면 자동으로 뒷자리로 포커스 이동
   const handlePhone2Change = (e: React.ChangeEvent<HTMLInputElement>) => {
       const val = e.target.value.replace(/[^0-9]/g, '');
       if (val.length <= 4) {
@@ -75,7 +97,6 @@ export const UserMain: React.FC = () => {
 
   const validateInput = () => {
     const trimmedName = name.trim();
-    const fullPhone = getFullPhone();
     
     // 1. Name Validation (Length & Regex)
     const nameRegex = /^[a-zA-Z가-힣]+$/; // Allows Hangul and English
@@ -101,6 +122,7 @@ export const UserMain: React.FC = () => {
     }
 
     // 2. Phone Validation
+    // 중간번호 3~4자리, 뒷번호 4자리
     if (phone2.length < 3 || phone3.length < 4) {
        setModalConfig({
         isOpen: true,
@@ -125,22 +147,29 @@ export const UserMain: React.FC = () => {
     return true;
   };
 
-  const checkExisting = (targetName: string, targetPhone: string): AttendanceRecord | undefined => {
-    return records.find(r => r.name === targetName && r.phone === targetPhone);
+  // 중복 확인: 이름이 달라도 전화번호가 같으면 중복으로 간주
+  const checkExisting = (targetPhone: string): AttendanceRecord | undefined => {
+    return records.find(r => r.phone === targetPhone);
   };
 
   const handleAttendClick = () => {
     if (!validateInput()) return;
 
-    const finalName = name.trim();
+    const finalName = name.trim(); // 공백 제거
     const finalPhone = getFullPhone();
 
-    const existing = checkExisting(finalName, finalPhone);
+    const existing = checkExisting(finalPhone);
+    
     if (existing) {
+       // 이미 존재하면 모달 띄우기 (이름이 달라도 전화번호가 같으면 갱신 유도)
+       const msg = existing.name !== finalName 
+         ? `입력하신 전화번호(${finalPhone})로 이미 '${existing.name}'님의 제출 내역이 있습니다.\n'${finalName}'(으)로 정보를 변경하여 참석 제출하시겠습니까?`
+         : "이미 제출된 내역이 있습니다. 참석 정보로 갱신하시겠습니까?";
+
        setModalConfig({
         isOpen: true,
-        title: "중복 제출",
-        message: "이미 위임장 제출이 등록되어 있습니다. 참석으로 변경(또는 갱신)하시겠습니까?",
+        title: "중복 제출 확인",
+        message: msg,
         type: 'CONFIRM_ATTEND'
       });
     } else {
@@ -149,8 +178,9 @@ export const UserMain: React.FC = () => {
   };
 
   const processAttend = (finalName: string, finalPhone: string) => {
-    // If existing, reuse ID to update
-    const existing = checkExisting(finalName, finalPhone);
+    // If existing based on phone, reuse ID to update (this handles name changes too)
+    const existing = checkExisting(finalPhone);
+    
     const newRecord: AttendanceRecord = {
       id: existing ? existing.id : crypto.randomUUID(),
       name: finalName,
@@ -174,16 +204,23 @@ export const UserMain: React.FC = () => {
     const finalName = name.trim();
     const finalPhone = getFullPhone();
 
-    const existing = checkExisting(finalName, finalPhone);
+    const existing = checkExisting(finalPhone);
+    
     if (existing) {
       const isAttend = existing.type === AttendanceType.ATTEND;
-      const msg = isAttend 
-        ? "이미 참석 제출하였습니다. 위임장으로 제출하시겠습니까?"
-        : "이미 참석 제출로 등록되어 있습니다. 위임장 제출로 변경하시겠습니까?";
+      let msg = "";
+      
+      if (existing.name !== finalName) {
+           msg = `입력하신 전화번호(${finalPhone})로 이미 '${existing.name}'님의 제출 내역이 있습니다.\n'${finalName}'(으)로 정보를 변경하여 위임장을 작성하시겠습니까?`;
+      } else {
+           msg = isAttend 
+            ? "이미 참석 제출하였습니다. 위임장으로 제출하시겠습니까?"
+            : "이미 위임장을 제출하셨습니다. 다시 작성하여 갱신하시겠습니까?";
+      }
 
       setModalConfig({
         isOpen: true,
-        title: "중복 제출",
+        title: "중복 제출 확인",
         message: msg,
         type: 'CONFIRM_PROXY_REDIRECT'
       });
@@ -271,7 +308,7 @@ export const UserMain: React.FC = () => {
                     <select
                         value={phone1}
                         onChange={(e) => setPhone1(e.target.value)}
-                        className="w-[28%] px-2 py-3 bg-white text-gray-900 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-center appearance-none"
+                        className="w-[30%] px-1 py-3 bg-white text-gray-900 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-center appearance-none cursor-pointer"
                         style={{ textAlignLast: 'center' }}
                     >
                         {PHONE_PREFIXES.map(prefix => (
@@ -285,7 +322,7 @@ export const UserMain: React.FC = () => {
                         onChange={handlePhone2Change}
                         placeholder="1234"
                         maxLength={4}
-                        className="w-[36%] px-3 py-3 bg-white text-gray-900 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 text-center tracking-widest"
+                        className="w-[35%] px-3 py-3 bg-white text-gray-900 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 text-center tracking-widest"
                     />
                     <input
                         ref={phone3Ref}
@@ -294,7 +331,7 @@ export const UserMain: React.FC = () => {
                         onChange={handlePhone3Change}
                         placeholder="5678"
                         maxLength={4}
-                        className="w-[36%] px-3 py-3 bg-white text-gray-900 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 text-center tracking-widest"
+                        className="w-[35%] px-3 py-3 bg-white text-gray-900 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 text-center tracking-widest"
                     />
                 </div>
               </div>
