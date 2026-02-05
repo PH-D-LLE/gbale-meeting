@@ -40,8 +40,8 @@ export const ProxyForm: React.FC = () => {
         
         try {
             // Find existing record to update (Critical for preventing duplicates)
-            // Using records from context which should be up to date
-            const existingRecord = records.find(r => r.name === tempUser.name && r.phone === tempUser.phone);
+            // Changed to check PHONE ONLY. Even if name is different, same phone means same user.
+            const existingRecord = records.find(r => r.phone === tempUser.phone);
             const recordId = existingRecord ? existingRecord.id : crypto.randomUUID();
 
             const newRecord: AttendanceRecord = {
