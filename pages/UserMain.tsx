@@ -27,6 +27,9 @@ export const UserMain: React.FC = () => {
   const [phone3, setPhone3] = useState('');
 
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
+  
+  // Submission List State
+  const [isListOpen, setIsListOpen] = useState(false);
 
   // Refs for auto-focus
   const phone2Ref = useRef<HTMLInputElement>(null);
@@ -243,6 +246,26 @@ export const UserMain: React.FC = () => {
     setModalConfig({ ...modalConfig, isOpen: false });
   };
 
+  // Helper for masking
+  const maskName = (rawName: string) => {
+    if (!rawName) return '';
+    if (rawName.length === 1) return rawName + 'x';
+    return rawName.charAt(0) + 'x'.repeat(rawName.length - 1);
+  };
+
+  const maskPhone = (rawPhone: string) => {
+      // Expecting rawPhone like 01012345678
+      if (rawPhone.length < 8) return rawPhone;
+      const prefix = rawPhone.substring(0, 3);
+      const suffix = rawPhone.substring(rawPhone.length - 4);
+      return `${prefix}-xxxx-${suffix}`;
+  };
+
+  // Sort records: Latest first
+  const sortedRecords = [...records].sort((a, b) => 
+    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  );
+
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       {/* Hero Section */}
@@ -379,6 +402,45 @@ export const UserMain: React.FC = () => {
                 위임장 작성하기
               </button>
             </div>
+            
+            {/* Submission List Section */}
+            <div className="border-t border-gray-200 pt-6">
+                <button 
+                    onClick={() => setIsListOpen(!isListOpen)}
+                    className="w-full flex justify-between items-center text-gray-700 font-bold p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                    <span>현재 제출 인원 : <span className="text-indigo-600">{records.length}</span>명</span>
+                    <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        className={`h-5 w-5 transform transition-transform ${isListOpen ? 'rotate-180' : ''}`} 
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                    >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                
+                {isListOpen && (
+                    <div className="mt-3 bg-slate-50 border border-slate-200 rounded-lg p-3 max-h-60 overflow-y-auto custom-scrollbar">
+                        {records.length > 0 ? (
+                            <ul className="space-y-1">
+                                {sortedRecords.map((r, index) => (
+                                    <li key={r.id} className="text-sm text-slate-600 flex items-center gap-2 py-1 border-b border-slate-100 last:border-0">
+                                        <span className="font-mono text-slate-400 w-6 text-right">{index + 1}.</span>
+                                        <span className="font-medium text-slate-800">{maskName(r.name)}</span>
+                                        <span className="text-xs text-slate-400">•</span>
+                                        <span className="font-mono">{maskPhone(r.phone)}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <div className="text-center text-sm text-gray-400 py-4">
+                                아직 제출된 내역이 없습니다.
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
           </div>
         </div>
 
