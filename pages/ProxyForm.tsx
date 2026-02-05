@@ -73,6 +73,19 @@ export const ProxyForm: React.FC = () => {
       navigate('/');
   }
 
+  const handleDownload = () => {
+      if (settings.proxyDownloadFile && settings.proxyDownloadFileName) {
+          const link = document.createElement("a");
+          link.href = settings.proxyDownloadFile;
+          link.download = settings.proxyDownloadFileName;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+      } else {
+          alert("다운로드 가능한 서식이 없습니다.");
+      }
+  };
+
   if (!tempUser) return null;
 
   return (
@@ -199,6 +212,27 @@ export const ProxyForm: React.FC = () => {
                 {isSubmitting ? '제출 중...' : '제출하기'}
             </button>
         </div>
+
+        {/* Manual Download Section */}
+        {settings.proxyManualInstructions && (
+            <div className="bg-slate-100 border border-slate-200 rounded-xl p-6 mt-8">
+                <h3 className="font-bold text-slate-700 mb-4 border-b border-slate-200 pb-2">오프라인 제출 안내</h3>
+                <div className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed mb-4">
+                    {settings.proxyManualInstructions}
+                </div>
+                {settings.proxyDownloadFile && (
+                     <button 
+                        onClick={handleDownload}
+                        className="w-full py-3 bg-white border border-slate-300 text-slate-700 font-bold rounded-lg hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-300 transition-colors flex items-center justify-center gap-2 shadow-sm"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        [위임장 서식 다운로드]
+                    </button>
+                )}
+            </div>
+        )}
 
       </main>
 

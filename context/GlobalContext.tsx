@@ -7,6 +7,8 @@ interface GlobalContextType {
   updateSettings: (newSettings: AppSettings) => Promise<void>;
   records: AttendanceRecord[];
   addRecord: (record: AttendanceRecord) => Promise<void>;
+  removeRecords: (ids: string[]) => Promise<void>;
+  clearAllRecords: () => Promise<void>;
   refreshRecords: () => Promise<void>;
   tempUser: { name: string; phone: string } | null;
   setTempUser: (user: { name: string; phone: string } | null) => void;
@@ -49,8 +51,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   };
 
   const addRecord = async (record: AttendanceRecord) => {
-    // 1. Optimistic Update: Update local state immediately
-    // This ensures that subsequent checks (like checkExisting) see the new data right away
+    // 1. Optimistic Update
     setRecords(prevRecords => {
       const index = prevRecords.findIndex(r => r.id === record.id);
       if (index >= 0) {
@@ -69,8 +70,34 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         await Storage.saveRecord(record);
     } catch (e) {
         console.error("Failed to save record to DB", e);
-        // In a real app, you might want to revert the state here if save fails
     }
+  };
+
+  const removeRecords = async (ids: string[]) => {
+      // 1. Optimistic Update
+      setRecords(prev => prev.filter(r => !ids.includes(r.id)));
+
+      // 2. Async Delete
+      try {
+          // Delete one by one for now (RTDB simple implementation)
+          await Promise.all(ids.map(id => Storage.deleteRecord(id)));
+      } catch (e) {
+          console.error("Failed to delete records", e);
+          refreshRecords(); // Revert on error
+      }
+  };
+
+  const clearAllRecords = async () => {
+      // 1. Optimistic Update
+      setRecords([]);
+
+      // 2. Async Delete
+      try {
+          await Storage.clearRecords();
+      } catch (e) {
+          console.error("Failed to clear records", e);
+          refreshRecords();
+      }
   };
 
   const refreshRecords = async () => {
@@ -86,6 +113,8 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       updateSettings, 
       records, 
       addRecord, 
+      removeRecords,
+      clearAllRecords,
       refreshRecords,
       tempUser,
       setTempUser,

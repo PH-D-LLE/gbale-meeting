@@ -38,6 +38,18 @@ const lsGetRecords = async (): Promise<AttendanceRecord[]> => {
     return JSON.parse(localStorage.getItem(LS_KEYS.RECORDS) || '[]');
 };
 
+const lsDeleteRecord = async (id: string) => {
+    await wait();
+    const records = JSON.parse(localStorage.getItem(LS_KEYS.RECORDS) || '[]');
+    const newRecords = records.filter((r: AttendanceRecord) => r.id !== id);
+    localStorage.setItem(LS_KEYS.RECORDS, JSON.stringify(newRecords));
+};
+
+const lsClearRecords = async () => {
+    await wait();
+    localStorage.removeItem(LS_KEYS.RECORDS);
+};
+
 const lsSaveSettings = async (settings: AppSettings) => {
     await wait();
     localStorage.setItem(LS_KEYS.SETTINGS, JSON.stringify(settings));
@@ -107,6 +119,32 @@ export const getRecords = async (): Promise<AttendanceRecord[]> => {
       }
   }
   return lsGetRecords();
+};
+
+export const deleteRecord = async (id: string): Promise<void> => {
+    if (db) {
+        try {
+            const recordRef = ref(db, `${PATH_RECORDS}/${id}`);
+            await remove(recordRef);
+            return;
+        } catch (e) {
+             console.warn("RTDB deleteRecord failed (using LocalStorage fallback):", e);
+        }
+    }
+    return lsDeleteRecord(id);
+};
+
+export const clearRecords = async (): Promise<void> => {
+    if (db) {
+        try {
+            const recordsRef = ref(db, PATH_RECORDS);
+            await remove(recordsRef);
+            return;
+        } catch (e) {
+             console.warn("RTDB clearRecords failed (using LocalStorage fallback):", e);
+        }
+    }
+    return lsClearRecords();
 };
 
 // ------------------------------------------------------------------
@@ -196,5 +234,5 @@ export const deleteAdmin = async (docId: string): Promise<void> => {
 };
 
 export const clearAllData = (): void => {
-    console.warn("Clear All Data is not implemented.");
+    console.warn("Clear All Data is not implemented. Use clearRecords instead.");
 };

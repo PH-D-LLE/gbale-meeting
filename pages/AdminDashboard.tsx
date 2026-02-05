@@ -7,9 +7,12 @@ import * as Storage from '../services/storage';
 
 export const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { records, settings, updateSettings, refreshRecords, isLoading } = useGlobal();
+  const { records, settings, updateSettings, refreshRecords, removeRecords, clearAllRecords, isLoading } = useGlobal();
   const [activeTab, setActiveTab] = useState<'DATA' | 'SETTINGS' | 'ADMINS'>('DATA');
   const [localSettings, setLocalSettings] = useState<AppSettings>(settings);
+  
+  // Selection State
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Admin Management State
   const [adminList, setAdminList] = useState<AdminUser[]>([]);
@@ -52,7 +55,7 @@ export const AdminDashboard: React.FC = () => {
     alert('설정이 저장되었습니다.');
   };
 
-  const handleChangeSetting = (key: keyof AppSettings, value: string) => {
+  const handleChangeSetting = (key: keyof AppSettings, value: any) => {
     setLocalSettings(prev => ({ ...prev, [key]: value }));
   };
 
@@ -67,10 +70,79 @@ export const AdminDashboard: React.FC = () => {
       reader.readAsDataURL(file);
     }
   };
+
+  const handleProxyFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+        if (file.size > 2 * 1024 * 1024) { // 2MB restriction
+            alert("파일 크기는 2MB 이하여야 합니다.");
+            e.target.value = '';
+            return;
+        }
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const base64String = reader.result as string;
+            setLocalSettings(prev => ({
+                ...prev,
+                proxyDownloadFile: base64String,
+                proxyDownloadFileName: file.name
+            }));
+        };
+        reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveProxyFile = () => {
+      setLocalSettings(prev => ({
+          ...prev,
+          proxyDownloadFile: null,
+          proxyDownloadFileName: null
+      }));
+  };
   
   const handleOpenUserView = () => {
       const url = `${window.location.origin}${window.location.pathname}#/`;
       window.open(url, '_blank');
+  };
+
+  // --- Data Selection & Deletion Handlers ---
+
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.checked) {
+          const allIds = records.map(r => r.id);
+          setSelectedIds(new Set(allIds));
+      } else {
+          setSelectedIds(new Set());
+      }
+  };
+
+  const handleSelectRow = (id: string) => {
+      const newSelected = new Set(selectedIds);
+      if (newSelected.has(id)) {
+          newSelected.delete(id);
+      } else {
+          newSelected.add(id);
+      }
+      setSelectedIds(newSelected);
+  };
+
+  const handleDeleteSelected = async () => {
+      if (selectedIds.size === 0) return;
+      if (window.confirm(`${selectedIds.size}개의 항목을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) {
+          await removeRecords(Array.from(selectedIds));
+          setSelectedIds(new Set());
+      }
+  };
+
+  const handleDeleteAll = async () => {
+      if (records.length === 0) return;
+      if (window.confirm("모든 참석/위임장 데이터를 삭제하시겠습니까? \n\n경고: 이 작업은 절대 되돌릴 수 없습니다!")) {
+          // Double confirmation
+          if(window.confirm("정말로 모든 데이터를 초기화합니까?")) {
+              await clearAllRecords();
+              setSelectedIds(new Set());
+          }
+      }
   };
 
   // --- Admin Management Functions ---
@@ -127,6 +199,9 @@ export const AdminDashboard: React.FC = () => {
       return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
+  // Sorted Records helper
+  const sortedRecords = [...records].sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col font-sans">
       <nav className="bg-white shadow-sm z-10 sticky top-0">
@@ -166,9 +241,33 @@ export const AdminDashboard: React.FC = () => {
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
         {activeTab === 'DATA' && (
           <div className="bg-white shadow rounded-lg overflow-hidden">
-            <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-              <span className="font-bold text-gray-700">총 {records.length}명 제출</span>
-              <div className="flex gap-2">
+            <div className="p-4 border-b border-gray-200 flex flex-col md:flex-row justify-between items-center bg-gray-50 gap-4">
+              <div className="flex items-center gap-4">
+                  <span className="font-bold text-gray-700 text-lg">총 {records.length}명 제출</span>
+                  {selectedIds.size > 0 && (
+                      <span className="text-sm text-indigo-600 font-semibold bg-indigo-50 px-2 py-1 rounded">
+                          {selectedIds.size}개 선택됨
+                      </span>
+                  )}
+              </div>
+              <div className="flex flex-wrap gap-2 justify-center">
+                  {selectedIds.size > 0 && (
+                      <button
+                        onClick={handleDeleteSelected}
+                        className="bg-red-500 text-white px-3 py-2 rounded hover:bg-red-600 text-sm font-bold shadow-sm flex items-center gap-1"
+                      >
+                        선택 삭제
+                      </button>
+                  )}
+                  {records.length > 0 && (
+                      <button
+                        onClick={handleDeleteAll}
+                        className="bg-red-700 text-white px-3 py-2 rounded hover:bg-red-800 text-sm font-bold shadow-sm flex items-center gap-1 border border-red-800"
+                      >
+                        전체 삭제
+                      </button>
+                  )}
+                  <div className="h-6 w-px bg-gray-300 mx-1 hidden md:block"></div>
                   <button
                     onClick={() => refreshRecords()}
                     className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 text-sm font-bold shadow-sm"
@@ -187,6 +286,14 @@ export const AdminDashboard: React.FC = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
+                    <th className="px-4 py-3 text-center">
+                        <input 
+                            type="checkbox" 
+                            className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer"
+                            onChange={handleSelectAll}
+                            checked={records.length > 0 && selectedIds.size === records.length}
+                        />
+                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">시간</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">연락처</th>
@@ -196,8 +303,20 @@ export const AdminDashboard: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {records.sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map((record) => (
-                    <tr key={record.id} className="hover:bg-gray-50">
+                  {sortedRecords.map((record) => (
+                    <tr 
+                        key={record.id} 
+                        className={`hover:bg-gray-50 cursor-pointer ${selectedIds.has(record.id) ? 'bg-indigo-50 hover:bg-indigo-100' : ''}`}
+                        onClick={() => handleSelectRow(record.id)}
+                    >
+                      <td className="px-4 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                          <input 
+                            type="checkbox" 
+                            className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer"
+                            checked={selectedIds.has(record.id)}
+                            onChange={() => handleSelectRow(record.id)}
+                          />
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(record.timestamp).toLocaleString('ko-KR')}
                       </td>
@@ -236,7 +355,7 @@ export const AdminDashboard: React.FC = () => {
                   ))}
                   {records.length === 0 && (
                       <tr>
-                          <td colSpan={6} className="px-6 py-10 text-center text-gray-500">데이터가 없습니다.</td>
+                          <td colSpan={7} className="px-6 py-10 text-center text-gray-500">데이터가 없습니다.</td>
                       </tr>
                   )}
                 </tbody>
@@ -330,6 +449,29 @@ export const AdminDashboard: React.FC = () => {
                                 <label className="block text-sm font-bold mb-1 text-gray-700">위임장 완료 팝업 메시지</label>
                                 <input type="text" className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-gray-900" value={localSettings.proxySuccessMsg} onChange={e => handleChangeSetting('proxySuccessMsg', e.target.value)} />
                             </div>
+                        </div>
+
+                        {/* Offline Proxy Settings (NEW) */}
+                        <div className="space-y-4">
+                             <h4 className="font-bold text-gray-600 text-sm uppercase">서면 위임장(오프라인) 안내 설정</h4>
+                             <div>
+                                <label className="block text-sm font-bold mb-1 text-gray-700">안내 문구</label>
+                                <textarea className="w-full p-3 border border-gray-300 rounded h-32 focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-gray-900" value={localSettings.proxyManualInstructions} onChange={e => handleChangeSetting('proxyManualInstructions', e.target.value)} placeholder="서명이 어려우신 경우..." />
+                             </div>
+                             <div>
+                                <label className="block text-sm font-bold mb-1 text-gray-700">위임장 양식 파일 업로드 (2MB 이하)</label>
+                                <input 
+                                    type="file" 
+                                    onChange={handleProxyFileUpload}
+                                    className="w-full p-2 border border-gray-300 rounded bg-white text-gray-900 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                                />
+                                {localSettings.proxyDownloadFileName && (
+                                    <div className="mt-2 flex items-center justify-between bg-green-50 px-3 py-2 rounded text-sm text-green-800 border border-green-200">
+                                        <span>현재 파일: <strong>{localSettings.proxyDownloadFileName}</strong></span>
+                                        <button onClick={handleRemoveProxyFile} className="text-red-500 hover:text-red-700 text-xs font-bold underline">삭제</button>
+                                    </div>
+                                )}
+                             </div>
                         </div>
                     </div>
                 </div>

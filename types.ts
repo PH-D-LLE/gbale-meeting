@@ -48,6 +48,11 @@ export interface AppSettings {
   noticeBoxBg: string;
   noticeText: string;
   
+  // Manual Proxy Download (New)
+  proxyManualInstructions: string;
+  proxyDownloadFile: string | null; // Base64 string
+  proxyDownloadFileName: string | null;
+
   // Contact Info
   contactOrgName: string;
   contactPhone: string;
@@ -72,6 +77,11 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
   noticeBoxBg: "bg-amber-50",
   noticeText: "※ 참석이 어려우신 분은 위임장을 제출해주시기 바랍니다.\n※ 위임장 제출 시 전자서명이 필요합니다.",
+  
+  proxyManualInstructions: "서명이 어려우신가요?\nPC에서 접속하셨거나 전자서명이 어려운 경우, 아래 방법으로 위임장을 제출하실 수 있습니다.\n\n1. 위임장 서식을 다운로드 합니다.\n2. 서식을 작성하고 서명합니다.\n3. 촬영 또는 스캔하여 협회 이메일로 전송합니다.\n4. 협회 메일 gbale0217@naver.com",
+  proxyDownloadFile: null,
+  proxyDownloadFileName: null,
+
   contactOrgName: "사단법인 한국평생교육사협회",
   contactPhone: "02-499-0043",
   contactFax: "02-499-0044",
